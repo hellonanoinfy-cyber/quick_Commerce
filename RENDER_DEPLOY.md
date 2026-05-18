@@ -155,6 +155,13 @@ Set `Cors__AllowedOrigins` on the API to your Vercel URL.
 
 ## 7. Troubleshooting
 
+### Backend / SDK errors
+
+| Symptom / log                                               | Cause                                                                          | Fix                                                                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `A compatible .NET SDK was not found` / requested `8.0.401` | Native .NET runtime on Render, or `global.json` patch newer than the image SDK | **Runtime must be Docker** (`docker/backend.Dockerfile`). Re-deploy after pulling latest `global.json` fix (`8.0.100` + `latestMajor`). |
+| Build OK but `/health` → 503                                | Azure SQL unreachable or missing connection string                             | Fix `ConnectionStrings__DefaultConnection` + Azure firewall (section 5).                                                                |
+
 ### Frontend deploy failures (most common)
 
 | Symptom / log                                               | Cause                                                      | Fix                                                                                                    |

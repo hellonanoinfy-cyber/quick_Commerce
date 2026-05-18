@@ -5,6 +5,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+# Use a Docker-friendly SDK policy (repo global.json may pin a patch not in this image).
+RUN printf '%s\n' '{' '  "sdk": { "rollForward": "latestPatch", "allowPrerelease": false }' '}' > global.json
+
 COPY backend/FirstCry/src/FirstCry.Domain/FirstCry.Domain.csproj src/FirstCry.Domain/
 COPY backend/FirstCry/src/FirstCry.Application/FirstCry.Application.csproj src/FirstCry.Application/
 COPY backend/FirstCry/src/FirstCry.Infrastructure/FirstCry.Infrastructure.csproj src/FirstCry.Infrastructure/
