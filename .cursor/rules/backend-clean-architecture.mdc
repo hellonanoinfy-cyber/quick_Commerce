@@ -1,0 +1,73 @@
+---
+description: Backend Clean Architecture, CQRS, and EF Core conventions for FirstCry.API
+globs: backend/**/*.cs
+alwaysApply: false
+---
+
+# Backend — Clean Architecture + CQRS Rules
+
+## Layer responsibilities (do not cross)
+
+| Layer | Project | Allowed |
+|---|---|---|
+| API | `FirstCry.API` | Controllers, middleware, hubs, DI wiring, Serilog setup |
+| Application | `FirstCry.Application` | MediatR commands/queries/handlers, DTOs, interfaces, validators, behaviors |
+| Domain | `FirstCry.Domain` | Entities, value objects, enums, domain events. No framework references. |
+| Infrastructure | `FirstCry.Infrastructure` | EF Core context, repositories, external service impls (Razorpay, MSG91, Cloudinary, Redis) |
+
+- Controllers MUST stay thin: `_mediator.Send(new XCommand(...), ct)` → `Ok(ApiResponse<T>.SuccessResponse(...))`. No EF queries in controllers.
+- Application layer MUST NOT reference `Microsoft.EntityFrameworkCore` types beyond `IApplicationDbContext` and `EF.Functions`.
+- Domain layer MUST NOT reference EF Core, MediatR, ASP.NET, or any third-party framework.
+- Infrastructure implements the interfaces declared in Application (`Common/Interfaces/`).
+
+## File-path conventions
+
+- New command: `backend/FirstCry/src/FirstCry.Application/Features/<Module>/Commands/<Verb><Noun>Command.cs`
+- New query: `backend/FirstCry/src/FirstCry.Application/Features/<Module>/Queries/Get<Noun>Query.cs`
+- New DTO: `backend/FirstCry/src/FirstCry.Application/DTOs/<Module>/<Name>Dto.cs`
+- New validator: in the same file as the command/query record, derived from `AbstractValidator<TRequest>`
+- New entity: `backend/FirstCry/src/FirstCry.Domain/Entities/<Module>/<Name>.cs` — derive from `AuditableEntity` for soft delete + timestamps
+- New EF configuration: `backend/FirstCry/src/FirstCry.Infrastructure/Data/Configurations/<Module>/<Name>Configuration.cs`
+- New repository: `backend/FirstCry/src/FirstCry.Infrastructure/Data/Repositories/<Name>Repository.cs` + interface in Application
+- New migration: `dotnet ef migrations add <Name> --project FirstCry.Infrastructure --startup-project FirstCry.API`
+
+## CQRS
+
+- Commands return either `Unit`, a `Guid` id, or a slim response DTO. NEVER return entities directly.
+- Queries return DTOs only, built with `.Select(...)` projections — never load entire entities into memory for a list view.
+- Handlers MUST take `CancellationToken` and forward it to every async call.
+- Cross-cutting concerns belong in `Common/Behaviors/` (validation is already there).
+
+## EF Core
+
+- Use `IApplicationDbContext` injection, never `ApplicationDbContext` directly outside Infrastructure.
+- Use `.AsNoTracking()` for read-only queries.
+- Avoid `Include` chains > 2 levels; project to DTOs instead.
+- Pagination is mandatory for any list query that can grow (orders, products, customers, reviews). Default page size 20, max 100.
+- Multi-step writes that span aggregates MUST go through `IUnitOfWork` or an explicit `IDbContextTransaction`.
+- Respect global soft-delete query filter — DO NOT add `.Where(x => !x.IsDeleted)` manually. If you need deleted rows, use `.IgnoreQueryFilters()` and justify it.
+- For decimal money: precision 18 scale 2 is already enforced globally; do not override.
+
+## Auth and authorization
+
+- Auth is **custom**, not ASP.NET Identity. Do NOT introduce `UserManager`, `RoleManager`, `SignInManager`, or `IdentityDbContext`.
+- Admin endpoints use `[Authorize(Policy = "AdminOnly")]`. Roles are stored as a plain string on `User.Role` (`"User"` or `"Admin"`).
+- Endpoint-level auth lives on the controller via `[Authorize]` / `[AllowAnonymous]`; route guards are not optional.
+- OTP / login endpoints require `[EnableRateLimiting("auth")]` (5/min).
+
+## API response shape
+
+Every controller action returns `ApiResponse<T>`:
+
+```csharp
+return Ok(ApiResponse<MyDto>.SuccessResponse(dto, "Done."));
+// On error, the ExceptionHandlingMiddleware shapes ApiResponse<object>.ErrorResponse(...)
+```
+
+Do not return raw entities, anonymous objects, or `IActionResult` without a typed payload.
+
+## Logging
+
+- Inject `ILogger<TClass>` and use structured logging: `_logger.LogInformation("Order {OrderId} placed by {UserId}", id, userId);`
+- Never log secrets, JWTs, refresh tokens, OTPs, or full phone numbers (mask middle digits).
+- Log at `Information` for business events, `Warning` for recoverable issues, `Error` only for unexpected failures.

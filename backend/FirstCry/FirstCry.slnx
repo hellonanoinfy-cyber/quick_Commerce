@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FirstCry.API/FirstCry.API.csproj" />
+    <Project Path="src/FirstCry.Application/FirstCry.Application.csproj" />
+    <Project Path="src/FirstCry.Domain/FirstCry.Domain.csproj" />
+    <Project Path="src/FirstCry.Infrastructure/FirstCry.Infrastructure.csproj" />
+  </Folder>
+</Solution>

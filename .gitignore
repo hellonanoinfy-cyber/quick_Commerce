@@ -1,0 +1,83 @@
+# ============================================================
+# FirstCry Monorepo — Root .gitignore
+# ============================================================
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# ---------- IDEs ----------
+.vs/
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ---------- Node / Frontend ----------
+node_modules/
+.next/
+out/
+build/
+.turbo/
+.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---------- .NET / Backend ----------
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.nupkg
+project.lock.json
+TestResults/
+
+# ---------- Environment ----------
+.env
+.env.*
+!.env.example
+!.env.local.example
+appsettings.Local.json
+
+# ---------- Docker ----------
+docker-compose.override.local.yml
+
+# ---------- Misc ----------
+*.log
+logs/
+coverage/
+*.bak
+*.tmp
+
+# ---------- Agent / tooling artifacts ----------
+.minimax/
+.opencode/
+.mavis/
+scratchpad.md
+
+# ---------- Cursor IDE ----------
+# Commit team-shared rules; ignore everything else under .cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# ---------- Runtime / stale ----------
+runtime-logs/
+PROJECT_AUDIT_REPORT.md
+API_CALLS_SUMMARY.md
+
+# ---------- Loose one-off SQL / queries ----------
+delete_user.sql
+migrate.sql
+query
+query/

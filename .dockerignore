@@ -1,0 +1,82 @@
+# ============================================================
+# FirstCry — .dockerignore
+# Keeps the build context small and prevents leaking secrets,
+# docs, and unrelated tooling into the image layers.
+# ============================================================
+
+# ---------- Version control ----------
+.git/
+.gitignore
+.gitattributes
+
+# ---------- Environment / secrets ----------
+.env
+.env.*
+!.env.example
+!frontend/.env.local.example
+appsettings.Local.json
+appsettings.Development.json
+
+# ---------- Node / Frontend build artifacts ----------
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+**/.turbo/
+**/.vercel/
+**/coverage/
+
+# ---------- .NET / Backend build artifacts ----------
+**/bin/
+**/obj/
+**/*.user
+**/*.suo
+**/TestResults/
+**/*.pdb
+
+# ---------- Logs ----------
+**/*.log
+**/logs/
+runtime-logs/
+
+# ---------- Docs and reports (not needed at runtime) ----------
+README.md
+DEPLOYMENT.md
+INTEGRATIONS.md
+PROJECT_AUDIT_REPORT.md
+API_CALLS_SUMMARY.md
+Agents.md
+AGENTS.md
+docs/
+scratchpad.md
+
+# ---------- Agent / IDE tooling ----------
+.minimax/
+.opencode/
+.mavis/
+.cursor/
+.vscode/
+.idea/
+.husky/
+
+# ---------- Loose dev artifacts ----------
+scripts/
+tools/
+delete_user.sql
+migrate.sql
+query
+query/
+
+# ---------- Docker compose files (not needed inside image) ----------
+docker-compose.yml
+docker-compose.prod.yml
+docker-compose.override.local.yml
+
+# ---------- OS noise ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.bak
+*.tmp

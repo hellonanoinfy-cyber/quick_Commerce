@@ -1,0 +1,115 @@
+# ══════════════════════════════════════════════════════════
+# FirstCry — Production-style Docker Compose
+# Usage: cp .env.example .env  (fill secrets)  then:
+#        docker compose -f docker-compose.prod.yml up -d --build
+# ══════════════════════════════════════════════════════════
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: firstcry-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C -b
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: firstcry-redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: firstcry-meilisearch
+    environment:
+      MEILI_ENV: "production"
+      MEILI_MASTER_KEY: "${MEILI_MASTER_KEY}"
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: firstcry-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "${DB_CONNECTION_STRING}"
+      ConnectionStrings__Redis: "${REDIS_CONNECTION_STRING}"
+      Jwt__Secret: "${JWT_SECRET}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      Jwt__ExpirationInMinutes: "${JWT_EXPIRATION_MINUTES}"
+      Jwt__RefreshTokenExpirationInDays: "${JWT_REFRESH_EXPIRATION_DAYS}"
+      Cors__AllowedOrigins: "${ALLOWED_ORIGINS}"
+      Smtp__Host: "${SMTP_HOST}"
+      Smtp__Port: "${SMTP_PORT:-587}"
+      Smtp__Username: "${SMTP_USERNAME:-resend}"
+      Smtp__Password: "${SMTP_PASSWORD}"
+      Smtp__FromEmail: "${SMTP_FROM_EMAIL}"
+      Smtp__FromName: "${SMTP_FROM_NAME:-MummaXpress}"
+      Otp__EmailHashSecret: "${OTP_EMAIL_HASH_SECRET}"
+      Sms__Msg91__AuthKey: "${SMS_MSG91_AUTH_KEY}"
+      Sms__Msg91__TemplateId: "${SMS_MSG91_TEMPLATE_ID}"
+      Sms__Msg91__WhatsAppTemplateName: "${SMS_MSG91_WHATSAPP_TEMPLATE_NAME}"
+      Sms__Msg91__WhatsAppIntegratedNumber: "${SMS_MSG91_WHATSAPP_INTEGRATED_NUMBER}"
+      Razorpay__KeyId: "${RAZORPAY_KEY_ID}"
+      Razorpay__KeySecret: "${RAZORPAY_KEY_SECRET}"
+      Razorpay__WebhookSecret: "${RAZORPAY_WEBHOOK_SECRET}"
+      Meilisearch__Url: "${MEILI_URL}"
+      Meilisearch__ApiKey: "${MEILI_MASTER_KEY}"
+      Cloudinary__CloudName: "${CLOUDINARY_CLOUD_NAME}"
+      Cloudinary__ApiKey: "${CLOUDINARY_API_KEY}"
+      Cloudinary__ApiSecret: "${CLOUDINARY_API_SECRET}"
+      Database__SeedOnStartup: "${DATABASE_SEED_ON_STARTUP:-false}"
+      Database__MigrateOnStartup: "true"
+    ports:
+      - "5000:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-}"
+        NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
+        API_INTERNAL_URL: "${API_INTERNAL_URL:-http://backend:8080}"
+    container_name: firstcry-frontend
+    environment:
+      NODE_ENV: "production"
+      API_INTERNAL_URL: "${API_INTERNAL_URL:-http://backend:8080}"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+  redis_data:
+  meilisearch_data:

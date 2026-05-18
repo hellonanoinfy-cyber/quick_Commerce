@@ -1,0 +1,43 @@
+# Normalize line endings on checkout/commit so Windows + Linux contributors
+# don't fight over CRLF/LF (matters for Vercel/Render Linux builds).
+* text=auto eol=lf
+
+# Force LF for these even on Windows (shell, configs, dotnet build files).
+*.sh           text eol=lf
+*.cs           text eol=lf
+*.csproj       text eol=lf
+*.sln          text eol=lf
+*.json         text eol=lf
+*.yml          text eol=lf
+*.yaml         text eol=lf
+Dockerfile     text eol=lf
+*.Dockerfile   text eol=lf
+
+# Force CRLF for Windows-only files.
+*.bat          text eol=crlf
+*.cmd          text eol=crlf
+*.ps1          text eol=crlf
+
+# Treat these as binary so Git never tries to diff or convert them.
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.gif          binary
+*.webp         binary
+*.ico          binary
+*.pdf          binary
+*.zip          binary
+*.gz           binary
+*.tgz          binary
+*.7z           binary
+*.woff         binary
+*.woff2        binary
+*.ttf          binary
+*.eot          binary
+*.mp4          binary
+*.mov          binary
+
+# Mark generated EF migration files so GitHub collapses them in diffs.
+backend/**/Migrations/*.cs        linguist-generated=true
+backend/**/Migrations/*.Designer.cs linguist-generated=true
+frontend/package-lock.json        linguist-generated=true

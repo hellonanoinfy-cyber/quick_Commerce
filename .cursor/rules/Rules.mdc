@@ -1,0 +1,199 @@
+---
+alwaysApply: true
+---
+
+# MummaXpress Engineering Standards
+
+You must follow these engineering standards strictly.
+
+## 1. Architecture Integrity
+
+* NEVER violate Clean Architecture boundaries
+* NEVER place business logic inside controllers
+* NEVER access DbContext directly from controllers or UI
+* NEVER duplicate business logic
+* ALWAYS reuse existing services, repositories, DTOs, validators, and abstractions
+* ALWAYS inspect existing implementation before generating code
+* ALWAYS extend existing architecture patterns before creating new ones
+* ALWAYS maintain CQRS separation
+* ALWAYS keep Domain layer framework-independent
+
+---
+
+## 2. Code Quality Standards
+
+* Write production-grade code only
+* Prefer readability over cleverness
+* Keep methods small and focused
+* Keep components modular
+* Remove dead code immediately
+* Avoid large files (>300–400 lines unless justified)
+* Avoid nested conditionals where possible
+* Prefer composition over inheritance
+* Avoid static mutable state
+* Avoid magic strings/numbers
+* Use constants/configuration
+* Use descriptive names
+* Avoid premature abstraction
+* Never use “temporary hacks”
+* Never leave TODOs without explanation
+
+---
+
+## 3. Backend Standards (.NET)
+
+* Use async/await end-to-end
+* Always pass CancellationToken
+* Use FluentValidation for all commands/requests
+* Validate all external input
+* Use MediatR for application workflows
+* Controllers must remain thin
+* Use DTO projections instead of returning entities
+* Use Result patterns consistently
+* Use structured logging with Serilog
+* Add proper exception handling
+* Avoid synchronous I/O
+* Prevent N+1 queries
+* Use pagination for large datasets
+* Use EF projections/selects
+* Add DB indexes for heavy queries
+* Respect soft delete filters
+* Keep Infrastructure replaceable
+* Avoid leaking Infrastructure into Application layer
+* Use transactions carefully
+* Design APIs to be idempotent where needed
+
+---
+
+## 4. Frontend Standards (Next.js)
+
+* Prefer Server Components by default
+* Use Client Components only when necessary
+* Avoid unnecessary “use client”
+* Keep Zustand limited to true client-global state
+* Use TanStack Query for server synchronization
+* Prevent hydration mismatch
+* Avoid unnecessary rerenders
+* Use loading/error/skeleton states
+* Keep UI responsive and accessible
+* Prefer reusable feature-based components
+* Avoid prop drilling
+* Avoid large monolithic pages
+* Use dynamic imports for heavy components
+* Optimize images and bundle size
+* Avoid excessive client-side fetching
+
+---
+
+## 5. Security Rules
+
+* Never trust client input
+* Always validate authorization server-side
+* Never expose secrets
+* Never hardcode credentials
+* Sanitize uploads and user-generated content
+* Protect admin APIs with proper policies
+* Prevent token leakage
+* Use secure cookie settings
+* Consider XSS/CSRF implications
+* Log suspicious activity
+* Rate limit sensitive endpoints
+* Validate payment/webhook signatures
+* Never bypass security for convenience
+
+---
+
+## 6. Performance Rules
+
+* Minimize DB round trips
+* Avoid loading unnecessary data
+* Use pagination and filtering
+* Cache expensive operations
+* Prevent memory leaks
+* Avoid unnecessary API calls
+* Optimize render paths
+* Think about horizontal scaling
+* Think about distributed systems impact
+* Design for failure and retries
+* Avoid blocking operations
+* Prefer streaming/chunking for large payloads
+
+---
+
+## 7. AI Generation Rules
+
+Before generating code:
+
+1. Analyze existing architecture
+2. Identify affected layers
+3. Explain risks
+4. Propose implementation plan
+5. Generate code
+6. Suggest tests
+7. Suggest performance/security review
+
+When debugging:
+
+* Find root cause, not symptoms
+* Avoid hacks
+* Explain why the bug happened
+* Preserve architecture consistency
+
+When refactoring:
+
+* Preserve behavior
+* Reduce complexity
+* Improve maintainability
+* Avoid unnecessary rewrites
+
+---
+
+## 8. Git & Commit Standards
+
+* Keep commits focused and atomic
+* Never mix refactor + feature + bugfix in one commit
+* Write meaningful commit messages
+
+Examples:
+
+* feat: add order idempotency support
+* fix: prevent duplicate Razorpay verification
+* refactor: extract product query service
+* perf: optimize homepage product queries
+* security: tighten refresh token validation
+
+---
+
+## 9. Testing Requirements
+
+For important features always consider:
+
+* unit tests
+* integration tests
+* edge cases
+* concurrency issues
+* authorization checks
+* performance implications
+* regression risks
+
+Never claim code is production-ready without considering testing impact.
+
+---
+
+## 10. Scalability Mindset
+
+Always think about:
+
+* concurrency
+* distributed deployment
+* cache consistency
+* database contention
+* horizontal scaling
+* retry safety
+* idempotency
+* observability
+* monitoring
+* operational maintenance
+
+Do not optimize prematurely,
+but do not introduce future scaling bottlenecks.

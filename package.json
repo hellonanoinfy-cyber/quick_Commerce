@@ -1,0 +1,33 @@
+{
+  "name": "firstcry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FirstCry Quick Commerce Platform — Monorepo Root",
+  "scripts": {
+    "prepare": "husky",
+    "lint:frontend": "cd frontend && npm run lint",
+    "build:frontend": "cd frontend && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend/FirstCry && dotnet build",
+    "dev:backend": "cd backend/FirstCry/src/FirstCry.API && dotnet run",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:infra": "docker compose up -d sqlserver redis meilisearch"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -1,0 +1,71 @@
+---
+description: Next.js 16 App Router, Zustand, and TanStack Query conventions for the FirstCry storefront
+globs: frontend/**/*.{js,jsx,ts,tsx}
+alwaysApply: false
+---
+
+# Frontend — Next.js 16 App Router Rules
+
+## Component model
+
+- **Default to Server Components.** Add `'use client'` only when the component uses state, effects, browser APIs, event handlers, or Zustand/TanStack hooks.
+- Push `'use client'` as deep as possible — keep page-level layouts as Server Components.
+- A component file > 300 lines is too big. Extract into `frontend/src/components/<domain>/...` and re-compose.
+- One component per file. Co-locate small helpers, extract larger ones to `frontend/src/lib/`.
+
+## State management
+
+- **Server data** → TanStack Query. Use the existing hooks under `frontend/src/hooks/queries/`. Cache keys must include filter inputs.
+- **Client-global state** → Zustand stores in `frontend/src/stores/`. The four canonical stores are `auth-store`, `cart-store`, `ui-store`, `location-store`. Do not create overlapping stores.
+- **Local UI state** → `useState` / `useReducer`. Do not push transient UI into Zustand.
+- Hydration: every persisted Zustand store has an `_hasHydrated` flag. Guards (`AuthGuard`, `AdminGuard`) already block render until hydrated — re-use them, do not reimplement.
+
+## Routing
+
+- Use App Router conventions: `page.jsx`, `layout.jsx`, `loading.jsx`, `error.jsx`, `not-found.jsx`.
+- Public routes go through the storefront layout; admin routes go through `frontend/src/app/admin/layout.jsx` (which wraps with `AdminGuard`).
+- Route protection has two layers, both already in place:
+  1. `frontend/middleware.js` — Edge runtime, JWT parse + role check from cookie
+  2. `AuthGuard` / `AdminGuard` / `GuestGuard` — client gate after hydration
+- Do not bypass either layer.
+
+## API access
+
+- Use the shared client: `import { api } from '@/lib/api/client'` and endpoints from `@/lib/api/endpoints`.
+- Same-origin requests go through Next.js rewrites (`/api/*` → backend). Do not call backend URLs directly from the browser.
+- All requests must handle error states. Use the existing `normalizeApiError` utility.
+- Retries belong on the axios instance, not in components.
+
+## Rendering performance
+
+- Avoid `useEffect(() => setState(...), [])` to re-derive props — derive in render.
+- Memoize expensive children with `React.memo`; memoize selectors with shallow-equality Zustand selectors.
+- Lists must have stable `key` props (never array index for dynamic lists).
+- Use Next.js `<Image>` with the existing remote-pattern whitelist in `next.config.mjs`. Provide `width`/`height` or `fill`.
+- For above-the-fold images use `priority`, for below-the-fold use `loading="lazy"`.
+
+## Styling
+
+- TailwindCSS v4 only. Use design tokens from `frontend/src/lib/design/tokens.js`.
+- Use `clsx` + `tailwind-merge` (already installed) for conditional classes.
+- Mobile-first responsive — every layout must work at 360 px width.
+
+## Accessibility
+
+- Interactive elements must be `<button>` or `<a>`, never clickable `<div>`.
+- Forms use `react-hook-form` + `zod` (already installed). Show inline error messages.
+- Maintain focus order; never `tabIndex={-1}` on focusable elements without a reason.
+
+## Build / type safety
+
+- The repo is JSX-first. If you add `.ts`/`.tsx`, use real types — no `any`.
+- Do not rely on `typescript.ignoreBuildErrors: true` to ship broken code — that is a temporary trade-off, not a license.
+- Run `npm run lint` before declaring a task done.
+
+## What NOT to do
+
+- Do not introduce a parallel state library (Redux, Jotai, Recoil).
+- Do not fetch from `useEffect` if TanStack Query can do it.
+- Do not store JWTs in `sessionStorage` — the current scheme is localStorage + non-HttpOnly cookie (a documented trade-off in `SECURITY_CHECKLIST.md` §6).
+- Do not create a new `auth-guard` variant; extend the existing one.
+- Do not import server-only modules into Client Components.

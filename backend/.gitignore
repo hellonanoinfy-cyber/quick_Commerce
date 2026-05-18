@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.pdb
+*.nupkg
+project.lock.json
+TestResults/
+
+# IDE
+.vs/
+.idea/
+*.sln.docstates
+
+# Logs
+logs/
+*.log
+
+# Secrets (never commit)
+appsettings.Local.json

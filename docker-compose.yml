@@ -1,0 +1,130 @@
+# ══════════════════════════════════════════════════════════
+# FirstCry — Docker Compose (Development)
+# ══════════════════════════════════════════════════════════
+# Usage:
+#   docker compose up -d                    → Start all services
+#   docker compose up -d sqlserver redis    → Start infra only
+#   docker compose down                    → Stop all
+#   docker compose logs -f backend         → Tail backend logs
+# ══════════════════════════════════════════════════════════
+
+services:
+  # ── SQL Server ─────────────────────────────────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: firstcry-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C -b
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Redis ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: firstcry-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Meilisearch ────────────────────────────────────────
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: firstcry-meilisearch
+    environment:
+      MEILI_ENV: "development"
+      MEILI_MASTER_KEY: "${MEILI_MASTER_KEY}"
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (.NET API) ─────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: firstcry-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=FirstCryDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      ConnectionStrings__Redis: "${REDIS_CONNECTION_STRING}"
+      Jwt__Secret: "${JWT_SECRET}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      Smtp__Host: "${SMTP_HOST}"
+      Smtp__Port: "${SMTP_PORT:-587}"
+      Smtp__Username: "${SMTP_USERNAME:-resend}"
+      Smtp__Password: "${SMTP_PASSWORD}"
+      Smtp__FromEmail: "${SMTP_FROM_EMAIL}"
+      Smtp__FromName: "${SMTP_FROM_NAME:-MummaXpress}"
+      Otp__EmailHashSecret: "${OTP_EMAIL_HASH_SECRET}"
+      Sms__Msg91__AuthKey: "${SMS_MSG91_AUTH_KEY}"
+      Sms__Msg91__TemplateId: "${SMS_MSG91_TEMPLATE_ID}"
+      Sms__Msg91__WhatsAppTemplateName: "${SMS_MSG91_WHATSAPP_TEMPLATE_NAME}"
+      Sms__Msg91__WhatsAppIntegratedNumber: "${SMS_MSG91_WHATSAPP_INTEGRATED_NUMBER}"
+      Razorpay__KeyId: "${RAZORPAY_KEY_ID}"
+      Razorpay__KeySecret: "${RAZORPAY_KEY_SECRET}"
+      Razorpay__WebhookSecret: "${RAZORPAY_WEBHOOK_SECRET}"
+      Meilisearch__Url: "${MEILI_URL}"
+      Meilisearch__ApiKey: "${MEILI_MASTER_KEY}"
+      Cors__AllowedOrigins: "${ALLOWED_ORIGINS}"
+      Database__SeedOnStartup: "true"
+      Database__MigrateOnStartup: "true"
+    ports:
+      - "5000:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Frontend (Next.js) ────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ""
+        NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+        API_INTERNAL_URL: "http://backend:8080"
+    container_name: firstcry-frontend
+    environment:
+      API_INTERNAL_URL: "http://backend:8080"
+      NEXT_PUBLIC_API_URL: ""
+      NEXT_PUBLIC_SIGNALR_URL: ""
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+  redis_data:
+  meilisearch_data:
