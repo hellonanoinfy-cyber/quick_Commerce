@@ -1,23 +1,25 @@
 # =============================================================================
-# Render.com Blueprint — MummaXpress backend (.NET 8 / ASP.NET Core)
+# Render.com Blueprint — MummaXpress (backend + frontend)
 # -----------------------------------------------------------------------------
 # Deploy:  https://dashboard.render.com/select-repo?type=blueprint
 #          Pick this repo  → Render reads this file → click "Apply".
 # Docs:    https://render.com/docs/blueprint-spec
+# Guide:   ./RENDER_DEPLOY.md
 # =============================================================================
 
 services:
+  # ── Backend (.NET 8) ─────────────────────────────────────────────────────
   - type: web
     name: mummaxpress-api
     runtime: docker
     repo: https://github.com/hellonanoinfy-cyber/quick_Commerce
     branch: main
-    region: singapore           # Closest free region for India users
-    plan: starter               # $7/mo. Use `free` to start; upgrade for always-on.
+    region: singapore # Closest free region for India users
+    plan: starter # $7/mo. Use `free` to start; upgrade for always-on.
     dockerfilePath: ./docker/backend.Dockerfile
     dockerContext: .
     healthCheckPath: /health
-    autoDeploy: true            # Re-deploy on every push to main
+    autoDeploy: true # Re-deploy on every push to main
 
     envVars:
       # ── Runtime ─────────────────────────────────────────────
@@ -37,26 +39,26 @@ services:
 
       # ── JWT (REQUIRED — Render can auto-generate the secret) ──
       - key: Jwt__Secret
-        generateValue: true     # 32-char hex generated on first deploy
+        generateValue: true # 32-char hex generated on first deploy
       - key: Jwt__Issuer
         value: FirstCry
       - key: Jwt__Audience
         value: FirstCryApp
       - key: Jwt__ExpirationInMinutes
-        value: "60"
+        value: '60'
       - key: Jwt__RefreshTokenExpirationInDays
-        value: "7"
+        value: '7'
 
-      # ── CORS (REQUIRED — comma-separated Vercel URL[s]) ──
+      # ── CORS (REQUIRED — frontend URL, e.g. https://mummaxpress-web.onrender.com) ──
       - key: Cors__AllowedOrigins
         sync: false
 
       # ── Database bootstrap ──────────────────────────────────
       # Flip SeedOnStartup to true for the FIRST deploy only, then back to false.
       - key: Database__MigrateOnStartup
-        value: "true"
+        value: 'true'
       - key: Database__SeedOnStartup
-        value: "false"
+        value: 'false'
       - key: ADMIN_PHONE_NUMBERS
         sync: false
 
@@ -65,7 +67,7 @@ services:
       - key: Smtp__Host
         sync: false
       - key: Smtp__Port
-        value: "587"
+        value: '587'
       - key: Smtp__Username
         value: resend
       - key: Smtp__Password
@@ -77,7 +79,7 @@ services:
       - key: Otp__EmailHashSecret
         generateValue: true
       - key: Otp__EmailExpiryMinutes
-        value: "5"
+        value: '5'
 
       # ── SMS (DISABLED until MSG91 template approval) ──
       - key: Sms__Msg91__AuthKey
@@ -99,4 +101,36 @@ services:
       - key: Cloudinary__ApiKey
         sync: false
       - key: Cloudinary__ApiSecret
+        sync: false
+
+  # ── Frontend (Next.js 16, Docker standalone) ─────────────────────────────
+  - type: web
+    name: mummaxpress-web
+    runtime: docker
+    repo: https://github.com/hellonanoinfy-cyber/quick_Commerce
+    branch: main
+    region: singapore
+    plan: starter # Next.js builds need RAM; use `standard` if build OOMs.
+    dockerfilePath: ./docker/frontend.Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    autoDeploy: true
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Wired to the API service URL after both services exist (re-deploy once).
+      - key: API_INTERNAL_URL
+        fromService:
+          type: web
+          name: mummaxpress-api
+          envVarKey: RENDER_EXTERNAL_URL
+      # Paste https://mummaxpress-web.onrender.com after the first deploy, then re-deploy.
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        value: ''
+      - key: NEXT_PUBLIC_API_TIMEOUT
+        value: '30000'
+      - key: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
         sync: false
