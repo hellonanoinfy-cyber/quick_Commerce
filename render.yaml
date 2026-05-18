@@ -1,0 +1,102 @@
+# =============================================================================
+# Render.com Blueprint — MummaXpress backend (.NET 8 / ASP.NET Core)
+# -----------------------------------------------------------------------------
+# Deploy:  https://dashboard.render.com/select-repo?type=blueprint
+#          Pick this repo  → Render reads this file → click "Apply".
+# Docs:    https://render.com/docs/blueprint-spec
+# =============================================================================
+
+services:
+  - type: web
+    name: mummaxpress-api
+    runtime: docker
+    repo: https://github.com/hellonanoinfy-cyber/quick_Commerce
+    branch: main
+    region: singapore           # Closest free region for India users
+    plan: starter               # $7/mo. Use `free` to start; upgrade for always-on.
+    dockerfilePath: ./docker/backend.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true            # Re-deploy on every push to main
+
+    envVars:
+      # ── Runtime ─────────────────────────────────────────────
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: PORT
+        value: 8080
+
+      # ── Database (REQUIRED — paste your Azure SQL conn string) ─
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      # ── Redis (OPTIONAL — Upstash free tier works great) ──
+      - key: ConnectionStrings__Redis
+        sync: false
+
+      # ── JWT (REQUIRED — Render can auto-generate the secret) ──
+      - key: Jwt__Secret
+        generateValue: true     # 32-char hex generated on first deploy
+      - key: Jwt__Issuer
+        value: FirstCry
+      - key: Jwt__Audience
+        value: FirstCryApp
+      - key: Jwt__ExpirationInMinutes
+        value: "60"
+      - key: Jwt__RefreshTokenExpirationInDays
+        value: "7"
+
+      # ── CORS (REQUIRED — comma-separated Vercel URL[s]) ──
+      - key: Cors__AllowedOrigins
+        sync: false
+
+      # ── Database bootstrap ──────────────────────────────────
+      # Flip SeedOnStartup to true for the FIRST deploy only, then back to false.
+      - key: Database__MigrateOnStartup
+        value: "true"
+      - key: Database__SeedOnStartup
+        value: "false"
+      - key: ADMIN_PHONE_NUMBERS
+        sync: false
+
+      # ── SMTP / Email OTP (OPTIONAL — Resend recommended) ──
+      # Leave empty for demo mode: OTPs are printed to server logs.
+      - key: Smtp__Host
+        sync: false
+      - key: Smtp__Port
+        value: "587"
+      - key: Smtp__Username
+        value: resend
+      - key: Smtp__Password
+        sync: false
+      - key: Smtp__FromEmail
+        sync: false
+      - key: Smtp__FromName
+        value: MummaXpress
+      - key: Otp__EmailHashSecret
+        generateValue: true
+      - key: Otp__EmailExpiryMinutes
+        value: "5"
+
+      # ── SMS (DISABLED until MSG91 template approval) ──
+      - key: Sms__Msg91__AuthKey
+        sync: false
+      - key: Sms__Msg91__TemplateId
+        sync: false
+
+      # ── Razorpay (OPTIONAL — demo modal if empty) ──
+      - key: Razorpay__KeyId
+        sync: false
+      - key: Razorpay__KeySecret
+        sync: false
+      - key: Razorpay__WebhookSecret
+        sync: false
+
+      # ── Cloudinary (OPTIONAL — image uploads) ──
+      - key: Cloudinary__CloudName
+        sync: false
+      - key: Cloudinary__ApiKey
+        sync: false
+      - key: Cloudinary__ApiSecret
+        sync: false
